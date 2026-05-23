@@ -172,7 +172,9 @@ $$P(L > \text{VaR}) = 0.05 \quad \Longleftrightarrow \quad \int_{\text{VaR}}^{\i
 
 ---
 
-## 4.5 核心公式
+## 4.5 核心公式速查
+
+> 本节是前述各节公式的集中汇总，供复习和查阅使用。
 
 ### 公式 4.1：定积分的黎曼和定义
 
@@ -344,7 +346,7 @@ import matplotlib.pyplot as plt
 face_value = 100
 coupon_rate = 0.05
 annual_coupon = face_value * coupon_rate
-r = 0.05  # 贴现率
+r = 0.06  # 贴现率（≠ 票面利率，才能体现两种DCF的差异）
 
 # ========== 离散DCF：每年付息一次 ==========
 def bond_price_discrete(T, r):
@@ -394,11 +396,11 @@ diff_range = [abs(p_disc_range[i] - p_cont_range[i]) for i in range(len(T_range)
 ax2.plot(T_range, diff_range, color='#FF9800', linewidth=2)
 ax2.set_xlabel('Maturity T (years)', fontsize=12)
 ax2.set_ylabel('Pricing Difference', fontsize=12)
-ax2.set_title('Difference Grows with Maturity', fontsize=13, fontweight='bold')
+ax2.set_title('Difference Peaks Around T=20 Years', fontsize=13, fontweight='bold')
 ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('chapter04_dcf_comparison.png', dpi=150, bbox_inches='tight', facecolor='white')
+# plt.savefig('chapter04_dcf_comparison.png', dpi=150, bbox_inches='tight', facecolor='white')
 plt.show()
 
 # ========== 永续极限 ==========
@@ -415,31 +417,31 @@ print(f"100-year continuous: {bond_price_continuous(100, r):.6f}")
 === Discrete DCF vs Continuous DCF ===
     Maturity |     Discrete |   Continuous |       Diff
 -------------------------------------------------------
-         1 |   100.000000 |    97.541015 |   2.458985
-         2 |   100.000000 |    95.122871 |   4.877129
-         3 |   100.000000 |    92.744538 |   7.255462
-         5 |   100.000000 |    88.120165 |  11.879835
-        10 |   100.000000 |    77.660219 |  22.339781
-        20 |   100.000000 |    60.653066 |  39.346934
-        30 |   100.000000 |    47.375413 |  52.624587
-        50 |   100.000000 |    28.752826 |  71.247174
-       100 |   100.000000 |     8.270708 |  91.729292
+         1 |    99.056604 |    99.029409 |   0.027195
+         2 |    98.166607 |    98.115341 |   0.051267
+         3 |    97.326988 |    97.254504 |   0.072485
+         5 |    95.787636 |    95.680304 |   0.107333
+        10 |    92.639913 |    92.480194 |   0.159719
+        20 |    88.530079 |    88.353237 |   0.176842
+        30 |    86.235169 |    86.088315 |   0.146854
+        50 |    84.238139 |    84.163118 |   0.075022
+       100 |    83.382454 |    83.374646 |   0.007808
 
 === Perpetuity Limit ===
-Discrete perpetuity: C/r = 100.000000
-Continuous perpetuity: integral = 100.000000
-100-year discrete: 100.000000
-100-year continuous: 91.729292
+Discrete perpetuity: C/r = 83.333333
+Continuous perpetuity: integral = 83.333333
+100-year discrete: 83.382454
+100-year continuous: 83.374646
 ```
 
 **关键观察**：
 
-1. **当票面利率=贴现率时，离散定价恒为面值**：这是离散债券定价的基本定理。
-2. **连续定价随期限增加而下降**：因为连续复利"更频繁"地折现。
-3. **差异随期限扩大**：短期差异约2-7元，长期差异超过70元。
-4. **永续极限相同**：尽管路径不同，但两种模型在 $T \to \infty$ 时都收敛到 $C/r = 100$。
+1. **贴现率 > 票面利率时，债券均为折价（低于面值）**：r=6% > 票面利率 5%，离散和连续定价都低于面值 100。这与第2章的"收益率上升→价格下跌"完全一致。
+2. **离散定价始终略高于连续定价**：因为离散模型每年折现一次（折现得更晚），连续模型每时每刻都在折现，后者对远期现金流的减值更大。
+3. **差异先增后减，存在峰值**：差异从短期约 0.03 元逐渐扩大，在约 20 年处达到峰值约 0.18 元，之后随期限增加反而缩小——因为在超长期限下两者都趋近永续极限 $C/r = 83.33$，差异最终收敛到零。
+4. **永续极限相同**：离散和连续永续都严格等于 $C/r = 83.33$。
 
-> 💡 **实际意义**：在短期债券定价中，离散和连续模型的差异可以忽略；但在长期养老金负债、保险准备金等超长期现金流估值中，连续模型可能给出显著不同的结果。
+> 💡 **实际意义**：在中长期债券（5-30年）的估值中，离散和连续模型的差异可达 0.1-0.2 元（对于 5% 票息的债券）。在养老金负债、保险准备金等超长期现金流的估值中，复利频率的选择可能显著影响定价结果。当 $r$ 与票面利率差距更大时，这种差异也会更大。
 
 ---
 
@@ -531,7 +533,7 @@ ax2.legend(fontsize=10)
 ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('chapter04_option_expectation.png', dpi=150, bbox_inches='tight', facecolor='white')
+# plt.savefig('chapter04_option_expectation.png', dpi=150, bbox_inches='tight', facecolor='white')
 plt.show()
 ```
 
@@ -543,21 +545,21 @@ Lognormal parameters:
   sigma*sqrt(T) = 0.2000
 
 Numerical integration:
-  E[max(S_T - K, 0)] = 10.990576
-  Est. error = 1.22e-13
+  E[max(S_T - K, 0)] = 10.986387
+  Est. error = 3.73e-10
 
 Black-Scholes analytic:
   d1 = 0.3500, d2 = 0.1500
-  Call price (PV) = 10.450583
-  Expected payoff = 10.990576
+  Call price (PV) = 10.450584
+  Expected payoff = 10.986396
 
-Comparison: Numerical = 10.990576, BS = 10.990576
-Difference = 0.00e+00
+Comparison: Numerical = 10.986387, BS = 10.986396
+Difference = 9.64e-06
 ```
 
 **关键观察**：
 
-1. **数值积分与解析解完全吻合**：差异为0（在机器精度范围内）。
+1. **数值积分与解析解几乎完全吻合**：差异约为 $9.6 \times 10^{-6}$（十万分之一），来自数值积分的有限上限截断误差，在实用中完全可以忽略。
 2. **期权现值 vs 期望收益**：BS公式给出的是**折现后的现值**（10.45），数值积分直接计算的是**到期时的期望收益**（10.99）。关系：$\text{PV} = e^{-rT} \times \text{Expected Payoff}$。
 3. **行权区域**：左图中红色填充区域表示 $S_T \geq K$ 的部分，期权收益只在区域内非零。
 
@@ -650,7 +652,7 @@ ax.legend(fontsize=10)
 ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('chapter04_var_visualization.png', dpi=150, bbox_inches='tight', facecolor='white')
+# plt.savefig('chapter04_var_visualization.png', dpi=150, bbox_inches='tight', facecolor='white')
 plt.show()
 
 print(f"\n=== VaR vs CVaR Comparison (95% confidence) ===")
@@ -672,22 +674,22 @@ Portfolio parameters:
 === Value at Risk (VaR) ===
   Confidence |        VaR($) |     VaR(%)
 ---------------------------------------------
-     90.0% |      -12,068.47 |   -1.2068%
-     95.0% |      -15,493.62 |   -1.5494%
-     99.0% |      -21,924.60 |   -2.1925%
-    99.9% |      -28,514.08 |   -2.8514%
+     90.0% |       11,712.70 |    1.1713%
+     95.0% |       15,145.58 |    1.5146%
+     99.0% |       21,585.10 |    2.1585%
+    99.9% |       28,803.13 |    2.8803%
 
 === Conditional VaR (CVaR/Expected Shortfall) ===
   Confidence |       CVaR($) |    CVaR(%)
 ---------------------------------------------
-     90.0% |       -15,493.62 |   -1.5494%
-     95.0% |       -18,918.77 |   -1.8919%
-     99.0% |       -25,349.75 |   -2.5350%
-    99.9% |       -31,939.23 |   -3.1939%
+     90.0% |       16,186.21 |    1.6186%
+     95.0% |       19,093.98 |    1.9094%
+     99.0% |       24,787.08 |    2.4787%
+    99.9% |       31,419.19 |    3.1419%
 
 === VaR vs CVaR Comparison (95% confidence) ===
-VaR:  5% probability daily loss exceeds 15,493.62
-CVaR: Average loss when exceeding VaR = 18,918.77
+VaR:  5% probability daily loss exceeds 15,145.58
+CVaR: Average loss when exceeding VaR = 19,093.98
       CVaR > VaR because CVaR averages extreme tail losses
 ```
 

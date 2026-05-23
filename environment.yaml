@@ -14,6 +14,9 @@ dependencies:
   - scipy>=1.11
   - matplotlib>=3.7
   - seaborn>=0.12
+  # 自动微分，目前这里装的是CPU版本
+  # 如果你的环境有CUDA，可以安装CUDA版本
+  - jax[cpu]>=0.4
 
   # ==========================================
   # 交互式开发环境
@@ -70,9 +73,6 @@ dependencies:
     # 回测框架（附录C，可选）
     # - backtrader>=1.9
     # - zipline-reloaded>=3.0
-
-    # 自动微分（第3章辅助）
-    # - jax[cpu]>=0.4    # 如需高性能自动微分，可安装
 
     # 格式化与代码质量（协作开发可选）
     # - black
