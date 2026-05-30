@@ -537,9 +537,7 @@ import numpy as np
 import os
 
 # 加载数据
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 df_mt = df[df['thscode'] == '600519.SH'].sort_values('time').reset_index(drop=True)
 
@@ -1009,7 +1007,7 @@ $$P(\sigma \mid r_1, \ldots, r_t) \propto P(r_t \mid \sigma) \cdot P(\sigma \mid
 
 ## 7.7 Python 实战
 
-> **环境依赖**: 本节代码需要 `numpy`, `pandas`, `matplotlib`, `scipy`. 请先执行 `conda activate maths-in-quant` 激活环境. 本节使用 `notebook/ifind_price_data.csv` 中的真实市场数据.
+> **环境依赖**: 本节代码需要 `numpy`, `pandas`, `matplotlib`, `scipy`. 请先执行 `conda activate maths-in-quant` 激活环境. 本节使用 `chaptedata/ifind_price_data.csv` 中的真实市场数据.
 
 ### 7.7.1 掷骰子模拟——大数定律的预热
 
@@ -1086,9 +1084,7 @@ plt.show()
 # ============================================
 # 读取 CSV 文件(自动适配 notebook 目录和项目根目录)
 import os
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df_raw = pd.read_csv(csv_path, parse_dates=['time'])
 
 # 筛选贵州茅台(600519.SH)的数据
