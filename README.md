@@ -3,6 +3,8 @@
 > **从高中数学出发，一步步攀登至量化金融的数学高峰。**
 > 
 
+[跳转到目录](#教程章节架构)
+
 ## 免责声明
 
 > **本项目中的所有内容，包括但不限于数学推导、代码示例、策略思路和数据处理方法，均仅供教育和学术研究目的。**
@@ -11,8 +13,6 @@
 > **任何依据本教程内容进行实际投资或交易决策的风险，由使用者自行承担。**
 >
 > 作者不对任何直接或间接的损失、损害或法律责任负责。
-
-
 ---
 
 ## 项目概述
@@ -59,33 +59,47 @@
 
 ---
 
-## 对读者的期望与前提
 
-需要特别说明的是，**本文并非编程入门教程**。我们默认读者已经具备一定的 Python 开发经验，能够独立完成 Python 环境的搭建、第三方库的安装以及基本的调试工作。如果你对 Python 尚不熟悉，建议先系统学习 Python 基础，再来阅读本项目。
+## 快速开始: 在 Jupyter Notebook 中阅读
 
-我们也不追求用最前沿的 AI 工具替代思考。你可以用 ChatGPT 或 Claude 辅助理解某个推导步骤，但请不要用它们替代你自己动手推导和编码的过程。**数学的理解没有捷径，量化的能力无法外包。**
+本教程**强烈建议在 Jupyter Notebook 中阅读**. GitHub 的 Markdown 渲染与 Jupyter 存在方言差异, 部分 LaTeX 公式可能显示异常; 而 Notebook 环境可以直接运行代码、修改参数、观察结果——这正是本项目"代码即练习"理念的完整呈现.
 
----
-## 例子代码执行环境
+### 1. 搭建环境 (首次使用, 约 3-5 分钟)
 
-1. 要求Python 3.12 以上
-2. 要求使用Conda环境，因为我们需要用的一些数学库在Conda下可以完美适应，而venv下则可能经历重新编译，会变得复杂
-3. 教程使用jupyter notebook的形式进行交互式教学
----
+要求 Python 3.12+, 使用 Conda 环境 (部分数学库在 venv 下需要重新编译, Conda 下可直接安装).
 
 ```bash
-# 1. 创建环境（约需 3-5 分钟）
+# 创建并激活环境
 conda env create -f environment.yaml
-
-# 2. 激活环境
 conda activate maths-in-quant
 
-# 3. 注册 Jupyter 内核（如需在 JupyterLab/VS Code 中使用）
+# 注册 Jupyter 内核 (如需在 JupyterLab / VS Code 中使用)
 python -m ipykernel install --user --name=maths-in-quant --display-name "Python (maths-in-quant)"
 
-# 4. 验证安装
+# 验证安装
 python -c "import numpy, pandas, scipy, matplotlib, statsmodels, cvxpy, sklearn, sympy, arch; print('All OK')"
 ```
+
+### 2. 生成 Notebook 文件
+
+教程源文件为 Markdown (`.md`), 一键转换为 `.ipynb`:
+
+```bash
+# 安装 jupytext (一次性)
+pip install jupytext
+
+# 批量转换
+jupytext --to notebook chapters/*.md
+```
+
+### 3. 启动阅读
+
+```bash
+jupyter notebook chapters/
+```
+使用notebook需要先安装字体：[字体安装](#字体安装)
+
+在打开的浏览器中选择任意章节开始. 每个代码块都可以独立运行——修改参数, 观察输出变化, 在"做中学"中建立数学体感.
 
 ---
 
@@ -363,35 +377,44 @@ python -c "import numpy, pandas, scipy, matplotlib, statsmodels, cvxpy, sklearn,
 4. **先解析后数值**：每个阶段都是先给解析解/闭式解，再给数值方法（蒙特卡洛、梯度下降），培养"能推公式、也能写代码"的双重能力
 
 ---
+## 鸣谢
 
-## 环境要求
+### 感谢文泉驿的免费字体
 
-- Python 3.12+
-- MiniConda
-- NumPy, Pandas, Matplotlib, SciPy
-- statsmodels, arch, cvxpy（对应阶段按需安装）
+**字体说明**: 教程使用文泉驿微米黑，采用其Apache 2.0协议
+
+#### 字体安装
+
+
+> Ubuntu下：
+> ```bash
+> sudo apt install ttf-wqy-microhei
+> ```
+> 
+> macOS下：
+> ```zsh
+> # 下载微米黑
+> curl -L -o ~/Downloads/wqy-microhei.ttc \
+>   https://github.com/anthonyfok/fonts-wqy-microhei/raw/master/wqy-microhei.ttc
+> 
+> # 下载正黑体
+> curl -L -o ~/Downloads/wqy-zenhei.ttc \
+>   https://github.com/ITboy/font/raw/master/wqy-zenhei/debian/usr/share/fonts/wenquanyi/wqy-zenhei/wqy-zenhei.ttc
+> ```
+> 下载后双击 .ttc 文件，macOS 会自动打开 Font Book，点击「安装字体」即可。
+> 
+> Notebook 内代码已统一设置:
+> ```python
+> plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+> plt.rcParams['axes.unicode_minus'] = False
+> ```
 
 ---
+## 变更日志 (Change Log)
 
-## 字体
+### 2026-05-30: 项目结构扁平化
 
-**感谢文泉驿的免费字体**
-本文notebook例子中采用了文泉驿微米黑(WenQuanYi Micro Hei)，采用其Apache 2.0协议
-
-在ubuntu上的安装指令:
-```bash
-sudo apt update
-sudo apt-get install ttf-wqy-microhei 
-```
-在notebook内统一使用如下代码设置字体:
-```python
-# 设置字体
-plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei'] 
-plt.rcParams['axes.unicode_minus'] = False
-```
-
----
-
+- 将原先分离的 `chapters/`(源文件)和 `notebook/`(Jupyter 文件)合并为统一的扁平 `chapters/` 目录. `.md` 源文件和 `.ipynb` 交互式文件现在共存于同一目录下, 共享 `chapters/images/` 和 `chapters/data/` 中的资源, 消除了图片和数据集需要在两处维护的冗余. 同时新增了"快速开始"指南, 将环境搭建、jupytext 转换和 Notebook 阅读建议前置到 README 顶部.
 
 > **愿我们都能在数字与代码之间，找到理解市场的那把钥匙。**
 > 
