@@ -42,6 +42,7 @@ $$v(2) = \lim_{\Delta t \to 0} \frac{s(2+\Delta t) - s(2)}{\Delta t} = \lim_{\De
 > **导数是敏感度（Sensitivity）**。它回答：当自变量 $x$ 发生一个微小变化 $dx$ 时，因变量 $f(x)$ 会相应变化多少？
 
 用微分的语言：$df = f'(x) \cdot dx$，意思是"输出的变化 ≈ 导数 × 输入的变化"。
+![导数 = 敏感度: 左图-切线斜率的几何意义, 右图-债券久期作为价格对收益率的导数](images/ch03_fig1_derivative_sensitivity.png)
 
 ---
 
@@ -594,6 +595,7 @@ Delta = 0.6368
 4. **数值微分 vs 自动微分**：数值微分（中心差分）直观但精度有限；自动微分（JAX/PyTorch）精确且可扩展至高维，是现代量化计算的基础设施。
 
 5. **Greeks 是衍生品风险管理的"仪表盘"**：Delta、Gamma、Vega、Theta、Rho 分别度量期权价值对五个核心变量的敏感度。一个合格的交易员必须能读懂这张"仪表盘"。
+![期权的 Delta: 左图-期权价格曲线与Delta切线, 右图-Delta随标的价格从0到1的变化](images/ch03_fig2_option_delta.png)
 
 ---
 
