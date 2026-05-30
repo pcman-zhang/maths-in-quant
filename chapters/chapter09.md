@@ -78,9 +78,7 @@ import numpy as np
 import pandas as pd
 import os
 
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 sub = df[df['thscode']=='000300.SH'].sort_values('time').set_index('time')
 log_rets = np.log(sub['close']/sub['close'].shift(1)).dropna()
@@ -402,7 +400,7 @@ $$\sigma_p^2 \to \rho \sigma^2$$
 
 ## 9.8 Python 实战: 真实 A 股数据的风险-收益分析
 
-> **环境依赖**: 本节代码使用 `notebook/ifind_price_data.csv` 中的真实市场数据(沪深 300, 贵州茅台, 宁德时代). 需要 `numpy`, `pandas`, `matplotlib`. 请先执行 `conda activate maths-in-quant` 激活环境.
+> **环境依赖**: 本节代码使用 `data/ifind_price_data.csv` 中的真实市场数据(沪深 300, 贵州茅台, 宁德时代). 需要 `numpy`, `pandas`, `matplotlib`. 请先执行 `conda activate maths-in-quant` 激活环境.
 
 ### 9.8.1 计算期望收益, 协方差矩阵与相关系数矩阵
 
@@ -419,9 +417,7 @@ plt.rcParams['axes.unicode_minus'] = False
 # ============================================
 # 加载真实数据
 # ============================================
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 
 # 三只标的
@@ -516,9 +512,7 @@ import os
 from sklearn.covariance import LedoitWolf
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 all_rets = {}
 for code, name in [('000300.SH','沪深300'),('600519.SH','贵州茅台'),('300750.SZ','宁德时代')]:
@@ -559,9 +553,7 @@ plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 all_rets = {}
 for code, name in [('000300.SH','沪深300'),('600519.SH','贵州茅台'),('300750.SZ','宁德时代')]:
@@ -624,9 +616,7 @@ plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 all_rets = {}
 for code, name in [('000300.SH','沪深300'),('600519.SH','贵州茅台'),('300750.SZ','宁德时代')]:
@@ -731,9 +721,7 @@ plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 all_rets = {}
 for code, name in [('000300.SH','沪深300'),('600519.SH','贵州茅台'),('300750.SZ','宁德时代')]:
@@ -837,9 +825,7 @@ plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 all_rets = {}
 for code, name in [('000300.SH','沪深300'),('600519.SH','贵州茅台'),('300750.SZ','宁德时代')]:

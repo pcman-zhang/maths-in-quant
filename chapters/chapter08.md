@@ -272,7 +272,7 @@ $$\gamma_2 = E\left[\left(\frac{X-\mu}{\sigma}\right)^4\right]$$
 
 ## 8.6 Python 实战: 用真实数据解剖收益率分布
 
-> **环境依赖**: 本节代码使用 `notebook/ifind_price_data.csv` 中的真实市场数据. 需要 `numpy`, `pandas`, `matplotlib`, `scipy`. 请先执行 `conda activate maths-in-quant` 激活环境.
+> **环境依赖**: 本节代码使用 `chaptedata/ifind_price_data.csv` 中的真实市场数据. 需要 `numpy`, `pandas`, `matplotlib`, `scipy`. 请先执行 `conda activate maths-in-quant` 激活环境.
 
 ### 8.6.1 加载真实数据并计算基本统计量
 
@@ -292,9 +292,7 @@ plt.rcParams['axes.unicode_minus'] = False
 # ============================================
 # 加载真实数据
 # ============================================
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 
 # 选取贵州茅台(600519.SH)
@@ -364,9 +362,7 @@ plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---- 加载数据(与 8.6.1 相同) ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 df_mt = df[df['thscode'] == '600519.SH'].sort_values('time').reset_index(drop=True)
 df_mt['log_ret'] = np.log(df_mt['close'] / df_mt['close'].shift(1))
@@ -483,9 +479,7 @@ import os
 from scipy import stats
 
 # ---- 加载数据(与 8.6.1 相同) ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 df_mt = df[df['thscode'] == '600519.SH'].sort_values('time').reset_index(drop=True)
 df_mt['log_ret'] = np.log(df_mt['close'] / df_mt['close'].shift(1))
@@ -574,9 +568,7 @@ import os
 from scipy import stats
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 
 # ============================================
@@ -659,9 +651,7 @@ plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 df_mt = df[df['thscode'] == '600519.SH'].sort_values('time').reset_index(drop=True)
 df_mt['log_ret'] = np.log(df_mt['close'] / df_mt['close'].shift(1))
@@ -750,9 +740,7 @@ plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 df_mt = df[df['thscode'] == '600519.SH'].sort_values('time').reset_index(drop=True)
 df_mt['log_ret'] = np.log(df_mt['close'] / df_mt['close'].shift(1))
@@ -825,9 +813,7 @@ plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---- 加载数据 ----
-csv_path = 'ifind_price_data.csv'
-if not os.path.exists(csv_path):
-    csv_path = 'notebook/ifind_price_data.csv'
+csv_path = 'data/ifind_price_data.csv'
 df = pd.read_csv(csv_path, parse_dates=['time'])
 df_mt = df[df['thscode'] == '600519.SH'].sort_values('time').reset_index(drop=True)
 df_mt['log_ret'] = np.log(df_mt['close'] / df_mt['close'].shift(1))
