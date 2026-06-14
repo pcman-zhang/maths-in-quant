@@ -132,9 +132,8 @@ $$\mathbf{r}_p = w_1 \mathbf{r}_1 + w_2 \mathbf{r}_2 + \cdots + w_N \mathbf{r}_N
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
-matplotlib.rcParams['axes.unicode_minus'] = False
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
 
 selected = ['000002.SZ', '600519.SH', '300750.SZ', '000858.SZ', '601398.SH', '002415.SZ']
 csv_path = 'data/stock_data_50_20210601_20260531.csv'
@@ -314,9 +313,8 @@ $$\mathbf{u} \cdot \mathbf{v} = 0 \quad \Longrightarrow \quad \cos \theta = 0 \q
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
-matplotlib.rcParams['axes.unicode_minus'] = False
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
 
 selected = ['000002.SZ', '600519.SH', '300750.SZ', '000858.SZ', '601398.SH', '002415.SZ']
 csv_path = 'data/stock_data_50_20210601_20260531.csv'
@@ -367,7 +365,6 @@ print(f"\n||w_equal||={np.linalg.norm(w_equal):.4f}, ||w_active||={np.linalg.nor
 print(f"(等权范数最小 = 1/sqrt(N) = {1/np.sqrt(n):.4f}, 集中度越高范数越大)")
 
 plt.tight_layout()
-plt.savefig('images/ch13_fig4_vector_visualization.png', dpi=150, bbox_inches='tight')
 plt.show()
 ```
 
@@ -506,9 +503,8 @@ $$\boxed{\mathbf{R}\mathbf{w} = w_1 \begin{pmatrix} R_{11} \\ R_{21} \\ \vdots \
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
-matplotlib.rcParams['axes.unicode_minus'] = False
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
 
 selected = ['000002.SZ', '600519.SH', '300750.SZ', '000858.SZ', '601398.SH', '002415.SZ']
 csv_path = 'data/stock_data_50_20210601_20260531.csv'
@@ -549,7 +545,6 @@ axes[1].set_title('超额收益 (主动 - 等权)')
 axes[1].set_xlabel('日期'); axes[1].set_ylabel('超额收益比率')
 axes[1].grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('images/ch13_fig3_portfolio_cumulative.png', dpi=150, bbox_inches='tight')
 plt.show()
 
 print(f"等权年化波动: {np.std(rp_equal_ts)*np.sqrt(252):.2%}")

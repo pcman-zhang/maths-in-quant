@@ -104,9 +104,8 @@ $$\boxed{\hat{\boldsymbol{\beta}} = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\ma
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
-matplotlib.rcParams['axes.unicode_minus'] = False
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
 
 # 加载数据: 沪深300(市场) + 宁德时代(个股)
 csv_path = 'data/stock_data_50_20210601_20260531.csv'
@@ -165,7 +164,6 @@ axes[1].axvline(x=0, color='red', linestyle='--', linewidth=1)
 axes[1].set_xlabel('残差'); axes[1].set_title('残差分布 (应大致对称)')
 axes[1].grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('images/ch15_fig1_matrix_ols.png', dpi=150, bbox_inches='tight')
 plt.show()
 ```
 
@@ -232,9 +230,8 @@ $$\|\mathbf{y}\|^2 = \|\hat{\mathbf{y}}\|^2 + \|\hat{\boldsymbol{\varepsilon}}\|
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import matplotlib
-matplotlib.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
-matplotlib.rcParams['axes.unicode_minus'] = False
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
 
 # 构造一个微型OLS: T=3个观测, k=2个参数 (含截距)
 # 设计矩阵 X: 3×2, 列空间是一个过原点的平面
@@ -280,24 +277,23 @@ ax.quiver(0, 0, 0, 0, 0, np.mean(y), color='#E67E22', linewidth=3,
           arrow_length_ratio=0.1, label='y (观测值)')
 ax.text(0.05, 0.05, np.mean(y), 'y', fontsize=14, color='#E67E22', fontweight='bold')
 
-# ŷ 向量 (投影)
+# y_hat 向量 (投影)
 ax.quiver(0, 0, 0, 0, 0, np.mean(y_hat), color='#2980B9', linewidth=3,
-          arrow_length_ratio=0.1, label='ŷ = Py (投影)')
-ax.text(0.05, -0.05, np.mean(y_hat), 'ŷ', fontsize=14, color='#2980B9', fontweight='bold')
+          arrow_length_ratio=0.1, label='y_hat = Py (投影)')
+ax.text(0.05, -0.05, np.mean(y_hat), 'y_hat', fontsize=14, color='#2980B9', fontweight='bold')
 
-# ε̂ 向量 (残差, 垂直于平面)
+# e 向量 (残差, 垂直于平面)
 mid_yhat = np.mean(y_hat)
 ax.quiver(0, 0, mid_yhat, 0, 0, np.mean(residuals), color='#E74C3C', linewidth=2.5,
-          arrow_length_ratio=0.15, label='ε̂ = y-ŷ (残差)')
-ax.text(0.1, 0, mid_yhat + np.mean(residuals)/2, 'ε̂', fontsize=14, color='#E74C3C', fontweight='bold')
+          arrow_length_ratio=0.15, label='e = y - y_hat (残差)')
+ax.text(0.1, 0, mid_yhat + np.mean(residuals)/2, 'e', fontsize=14, color='#E74C3C', fontweight='bold')
 
 ax.set_xlabel('X (截距列)'); ax.set_ylabel('X (因子列)'); ax.set_zlabel('收益率')
-ax.set_title('OLS的几何本质: y = ŷ + ε̂, ŷ ⟂ ε̂', fontsize=14)
+ax.set_title('OLS的几何本质: y = y_hat + e  (正交分解)', fontsize=14)
 ax.legend(loc='upper left', fontsize=10)
 # 调整视角以便看清直角
 ax.view_init(elev=20, azim=-45)
 plt.tight_layout()
-plt.savefig('images/ch15_fig2_projection_geometry.png', dpi=150, bbox_inches='tight')
 plt.show()
 ```
 
