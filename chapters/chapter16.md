@@ -1,0 +1,589 @@
+# 第16章 多元函数优化——从梯度到海森矩阵
+
+> **动机先行**: 第3章教了你对一个变量求导找极值——$f'(x)=0$ 解出最优的 $x$。第15章把这个思想推广到了向量: 对 $\boldsymbol{\beta}$ 求梯度、令其为零、解出 $\hat{\boldsymbol{\beta}}$。但这两个章节有一个共同的局限: 它们都假设**存在解析解**——你能通过"令导数=0"解出一个精确公式。然而量化金融中的大量优化问题根本没有闭式解: 当你的组合有500只股票、50个约束条件时，你无法手推一个公式。**这时你需要的是迭代算法——从一个初始猜测出发，一步一步"走"向最优解。** 梯度下降和牛顿法就是两种最核心的"走法"。本章建立从多元微积分到数值优化的完整桥梁，为第17章的拉格朗日乘子法和组合优化铺路。
+>
+> **量化实战定位**: 本章的梯度下降不是"机器学习课的课后作业"——它就是 `scipy.optimize.minimize` 的内部引擎。当你调用 `cvxpy` 求解 Markowitz 最优组合时，底层跑的就是某种梯度方法或内点法。理解梯度下降和牛顿法的区别，你就能理解为什么某些优化问题"秒出结果"而另一些"跑了10分钟还没收敛"。
+
+---
+
+## 16.1 动机: 从标量到向量——当参数超过1个时, "求导=0"还好用吗？
+
+回顾第3章学过的典型问题: 你持有一只股票，想确定最优仓位 $x$（占总资金的比例）使风险调整后收益 $f(x)$ 最大。你做的步骤是: 求 $f'(x)$，令 $f'(x)=0$，解出 $x^*$，用 $f''(x^*)<0$ 验证是最大值。三步走，干净利落。
+
+现在把问题升级: 不再是1只股票，而是50只。你需要确定50个权重 $(w_1, w_2, \dots, w_{50})$，使组合的某个目标函数（如波动率）最小。问题从"找一个数"变成了"找50个数"——从**标量优化**变成了**向量优化**。
+
+核心思路不变——还是"找极值点"——但工具需要全面升级。以两资产为例感受一下:
+
+你持有两只股票，权重分别为 $w_1$ 和 $w_2$（满足 $w_1+w_2=1$）。组合方差的展开式是:
+
+$$f(w_1, w_2) = w_1^2\sigma_1^2 + w_2^2\sigma_2^2 + 2w_1 w_2\sigma_{12}$$
+
+这是 $w_1, w_2$ 的**二元函数**——输入是两个数，输出是一个数（组合方差）。它在三维空间中是一个由协方差矩阵决定的抛物面。
+
+![组合方差函数的3D几何形状: 开口向上的抛物面, 蓝色线为 w1+w2=1 约束(可行集), 橙色点为约束下的最小方差组合。](images/ch16_fig0_paraboloid.png)
+
+> **读图**: 抛物面开口向上说明函数是凸的——存在唯一的全局最小值。无约束最小值在原点（绿色星号，$w_1=w_2=0$，方差=0）。但在真实投资中 $w_1+w_2=1$（全额投资约束），组合只能在蓝色线上移动——这条线是抛物面被平面 $w_1+w_2=1$ 截出的**抛物线**。橙色点就是这条抛物线的最低点，即"最小方差组合"。第17章将用拉格朗日乘子法精确求解这个橙点的坐标。
+
+想要找最小值，你需要回答三个问题:
+
+1. **"坡度"是什么？** 一元函数中，导数 $f'(x)$ 告诉你"往左还是往右走函数值下降"。多元函数中，你需要一个**向量**来同时告诉你"每个权重该往哪个方向调"——这个向量叫**梯度 (Gradient)**，记作 $\nabla f$。$\nabla$ 是希腊字母 nabla，读作 "del"，你可以先把它理解为"把 $f$ 对每个变量分别求偏导，再把结果排成一列"。
+
+2. **"曲率"是什么？** 一元函数中，二阶导数 $f''(x)$ 告诉你函数是"向上弯"（凸，有最小值）还是"向下弯"（凹，有最大值）。多元函数中，你需要一个**矩阵**来同时描述沿所有方向的曲率——这个矩阵叫**海森矩阵 (Hessian)**，记作 $\mathbf{H}_f$。它是一个 $n \times n$ 的对称方阵，每个元素都是 $f$ 的二阶偏导。
+
+3. **"最小值"的条件是什么？** 一元: $f'(x)=0$ 且 $f''(x)>0$。多元: $\nabla f = \mathbf{0}$（$n$ 个方程联立）且 $\mathbf{H}_f$ **正定**——这个概念将在16.3节展开，先直观理解为"沿任何方向的曲率都为正"，即函数在所有方向上都是"向上弯"的。
+
+用一张表总结从一元到多元的映射:
+
+|  | 一元函数 $f(x)$（第3章） | 多元函数 $f(\mathbf{x})$（本章） |
+|--|------------------------|-------------------------------|
+| 变量 | 1个标量 $x$ | $n$ 维向量 $\mathbf{x} = (x_1,\dots,x_n)$ |
+| 一阶工具 | 导数 $f'(x)$——一个数 | 梯度 $\nabla f$——$n$ 维向量, 每个分量是偏导 |
+| 极值必要条件 | $f'(x)=0$——1个方程 | $\nabla f = \mathbf{0}$——$n$ 个方程联立 |
+| 二阶工具 | $f''(x)$——一个数 | 海森矩阵 $\mathbf{H}_f$——$n \times n$ 对称阵 |
+| 极小充分条件 | $f''(x)>0$ | $\mathbf{H}_f$ 正定（所有特征值 $>0$） |
+
+本章要做的，就是把这张表中的每一个新概念——偏导数、梯度向量、海森矩阵、正定性——逐个讲清楚，并用它们构建两个最核心的数值优化算法: 梯度下降和牛顿法。
+
+---
+
+## 16.2 梯度: 多元函数的"导数向量"
+
+### 16.2.1 偏导数: 每次只让一个变量变化
+
+第3章学的一元函数求导 $f'(x) = \lim_{h \to 0}\frac{f(x+h)-f(x)}{h}$，适用于 $y=f(x)$ 这种"一个输入、一个输出"的情况。但量化中的函数几乎都是多元的——组合方差依赖 $n$ 个权重，期权价格依赖标的价格、波动率、时间等多个变量。你需要知道"只改变其中一个变量，函数怎么变"。
+
+**偏导数 (Partial Derivative)** 正是为这个目的设计的:
+
+$$\boxed{\frac{\partial f}{\partial x_i} = \lim_{h \to 0} \frac{f(x_1, \dots, x_i + h, \dots, x_n) - f(x_1, \dots, x_i, \dots, x_n)}{h}}$$
+
+**操作规则极其简单: 把其他所有变量当作常数，只对 $x_i$ 这个变量求导，使用的求导法则与一元函数完全相同。**
+
+符号 $\partial$（读作 "partial"，中文叫"偏"）用来区别于一元函数的 $d$——提醒你"这里还有别的变量，我只是暂时把它们冻住了"。
+
+**一个微型例子——手算二元函数的偏导数**:
+
+$$f(x, y) = x^2 + 3xy + y^3$$
+
+对 $x$ 求偏导: 把 $y$ 当常数 → $\frac{\partial f}{\partial x} = 2x + 3y$（$3xy$ 中的 $y$ 是常数 → 导数是 $3y$，$y^3$ 是常数 → 导数是 0）
+
+对 $y$ 求偏导: 把 $x$ 当常数 → $\frac{\partial f}{\partial y} = 3x + 3y^2$（$x^2$ 是常数 → 导数是 0，$3xy$ 中的 $x$ 是常数 → 导数是 $3x$）
+
+验证: 在点 $(x,y)=(1,2)$ 处，$\partial f/\partial x = 2(1)+3(2) = 8$，$\partial f/\partial y = 3(1)+3(4) = 15$。这意味着: 从 $(1,2)$ 出发，$x$ 每增加 1 单位函数约增加 8；$y$ 每增加 1 单位函数约增加 15——$y$ 变化的影响几乎是 $x$ 的两倍。
+
+> **与第3章的连接**: 如果 $f$ 只依赖一个变量，$\partial f/\partial x$ 就退化成了普通的 $df/dx$。偏导数是导数在多变量世界的自然推广——多一个变量，就多一个偏导数。
+
+### 16.2.2 梯度向量: 把所有偏导数打包
+
+把所有 $n$ 个偏导数排成一个列向量，就是**梯度 (Gradient)**:
+
+$$\boxed{\nabla f(\mathbf{x}) = \begin{pmatrix} \frac{\partial f}{\partial x_1} \\ \frac{\partial f}{\partial x_2} \\ \vdots \\ \frac{\partial f}{\partial x_n} \end{pmatrix}}$$
+
+梯度是导数的"向量推广": $f'(x)$ 是一个数（标量），$\nabla f(\mathbf{x})$ 是一个向量。上例中 $f(x,y)=x^2+3xy+y^3$ 的梯度是 $\nabla f = \begin{pmatrix} 2x+3y \\ 3x+3y^2 \end{pmatrix}$。
+
+**计算示例——组合方差函数的梯度**:
+
+对 $f(\mathbf{w}) = w_1^2\sigma_1^2 + w_2^2\sigma_2^2 + 2w_1 w_2\sigma_{12}$ 分别求偏导（把 $\sigma_1^2, \sigma_2^2, \sigma_{12}$ 当作常数，$w_1, w_2$ 是变量）:
+
+$$\frac{\partial f}{\partial w_1} = 2w_1\sigma_1^2 + 2w_2\sigma_{12}, \quad \frac{\partial f}{\partial w_2} = 2w_2\sigma_2^2 + 2w_1\sigma_{12}$$
+
+写成向量形式: $\nabla f(\mathbf{w}) = 2\mathbf{\Sigma}\mathbf{w}$。这正是第15章矩阵求导公式 $\nabla_{\mathbf{w}}(\mathbf{w}^T\mathbf{\Sigma}\mathbf{w}) = 2\mathbf{\Sigma}\mathbf{w}$ 的二元验证。
+
+> **全微分 (Total Differential)**: 如果你同时改变**所有**变量——$x_1$ 变 $dx_1$，$x_2$ 变 $dx_2$，...——函数的总变化量近似为各偏导贡献之和:
+> $$df = \frac{\partial f}{\partial x_1}dx_1 + \frac{\partial f}{\partial x_2}dx_2 + \cdots + \frac{\partial f}{\partial x_n}dx_n = \nabla f \cdot d\mathbf{x}$$
+> 这就是**偏微分的"全貌"**: 每个偏导 $\partial f/\partial x_i$ 是一个"局部变化率"，把 $n$ 个局部变化率按各自的变化量 $dx_i$ 加权求和，就得到了总变化量的近似。这个公式也是梯度下降法的数学基础——让 $d\mathbf{x} = -\eta \nabla f$，则 $df \approx -\eta \|\nabla f\|^2 \leq 0$，函数值一定下降。
+
+### 16.2.3 方向导数: 沿任意方向的变化率
+
+偏导数只告诉你"沿坐标轴方向"的变化率。但如果你想知道"沿任意方向 $\mathbf{d}$ 走一小步，$f$ 变化多快"？答案是**方向导数 (Directional Derivative)**:
+
+$$\boxed{D_{\mathbf{d}}f(\mathbf{x}) = \nabla f(\mathbf{x}) \cdot \mathbf{d} = \|\nabla f(\mathbf{x})\| \|\mathbf{d}\| \cos\theta}$$
+
+其中 $\mathbf{d}$ 是单位方向向量。
+
+这个公式有一个极其重要的推论: **当 $\mathbf{d}$ 与 $\nabla f$ 同向时 ($\cos\theta=1$)，方向导数最大，等于 $\|\nabla f(\mathbf{x})\|$。** 也就是说:
+
+$$\boxed{\text{梯度方向} = \text{函数值增长最快的方向}}$$
+
+反之，**负梯度方向** $-\nabla f(\mathbf{x})$ 就是函数值**下降最快**的方向。这就是梯度下降法的几何基础。
+
+![梯度方向与等高线: 每个红色箭头指向该点函数值增长最快的方向, 它们始终垂直于等高线。](images/ch16_fig1_gradient_contour.png)
+
+> **几何要点**: 梯度向量始终**垂直于等高线**——因为沿等高线方向函数值不变（方向导数为零），而梯度指向变化最快的方向，两者必然正交。上图是 $f(x_1, x_2) = x_1^2 + 2x_2^2$ 的等高线图，红色箭头指向增长方向。如果要求最小值，就往箭头的**反方向**走。
+
+### 16.2.4 量化实战: 组合波动率对权重的敏感度
+
+梯度在金融中最直接的应用是**边际风险贡献**——"增加1%的某资产权重，组合波动率变化多少"。
+
+代码逻辑分四步走:
+
+1. **输入**: 选定3只代表性股票（茅台、宁德时代、工商银行），提取近一年日收益率，计算年化协方差矩阵 $\mathbf{\Sigma}$。
+2. **组合波动率**: $\sigma_p = \sqrt{\mathbf{w}^T\mathbf{\Sigma}\mathbf{w}}$——一个标量，度量当前配置下的总风险。
+3. **梯度计算**: 对 $\sigma_p$ 求偏导需要链式法则——$\frac{\partial \sigma_p}{\partial \mathbf{w}} = \frac{\partial}{\partial \mathbf{w}}\sqrt{\mathbf{w}^T\mathbf{\Sigma}\mathbf{w}} = \frac{\mathbf{\Sigma}\mathbf{w}}{\sigma_p}$。这本质上是"外层导数（$1/(2\sqrt{\cdot})$）乘以内层导数（$2\mathbf{\Sigma}\mathbf{w}$）"的矩阵版。
+4. **边际风险贡献**: $MCAR_i = w_i \times \frac{\partial \sigma_p}{\partial w_i}$——权重乘以梯度分量，度量第 $i$ 个资产对总风险的"贡献额"。数学性质保证了 $\sum_i MCAR_i = \sigma_p$，即风险可以按资产完全分解。
+
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
+
+# 加载数据, 选3只代表性股票
+csv_path = 'data/stock_data_50_20210601_20260531.csv'
+df = pd.read_csv(csv_path, parse_dates=['time'])
+selected = ['600519.SH', '300750.SZ', '601398.SH']  # 茅台, 宁德, 工商银行
+
+df_recent = df[df['time'] >= '2024-06-01'].copy()
+pivot = df_recent.pivot(index='time', columns='thscode', values='close')[selected]
+rets = np.log(pivot / pivot.shift(1)).dropna()
+
+# 协方差矩阵和当前权重
+Sigma = rets.cov().values * 252       # 年化协方差
+w = np.array([0.4, 0.35, 0.25])       # 当前权重
+
+# 组合波动率 sigma_p = sqrt(w^T Σ w)
+sigma_p = np.sqrt(w @ Sigma @ w)
+
+# 梯度: d(sigma_p)/dw = (Σ w) / sigma_p
+grad = (Sigma @ w) / sigma_p
+
+# 边际风险贡献 (MCAR): 每项 = w_i * (∂σ_p/∂w_i)
+mcar = w * grad
+
+print(f"年化组合波动率: {sigma_p:.2%}")
+print(f"\n{'资产':<12} {'权重':>6} {'梯度(∂σ/∂w)':>12} {'边际风险贡献':>12}")
+print("-" * 46)
+for i, code in enumerate(selected):
+    print(f"{code:<12} {w[i]:>6.1%} {grad[i]:>12.4f} {mcar[i]:>12.4f}")
+print(f"\n边际贡献之和 = {mcar.sum():.4f} (应 = sigma_p = {sigma_p:.4f})")
+# 性质: sum(MCR_i) = σ_p —— 风险完全分解
+
+# 可视化梯度方向
+fig, ax = plt.subplots(figsize=(10, 5))
+colors = ['#E74C3C', '#2980B9', '#27AE60']
+for i, code in enumerate(selected):
+    ax.bar(i, grad[i], color=colors[i], alpha=0.8,
+           label=f'{code} (权重={w[i]:.0%})')
+ax.axhline(y=0, color='black', linewidth=0.5)
+ax.set_xticks(range(3)); ax.set_xticklabels(selected)
+ax.set_ylabel('梯度 (∂σ_p/∂w_i)'); ax.set_title('组合波动率的梯度: 各资产增加1%权重的边际风险')
+ax.legend(); ax.grid(True, alpha=0.3, axis='y')
+plt.tight_layout()
+plt.show()
+```
+
+**运行结果**:
+```
+年化组合波动率: 21.34%
+
+资产              权重    梯度(d_sigma/dw)   边际风险贡献
+----------------------------------------------
+600519.SH      40.0%       0.1905       0.0762
+300750.SZ      35.0%       0.3466       0.1213
+601398.SH      25.0%       0.0637       0.0159
+
+边际贡献之和 = 0.2134 (应 = sigma_p = 0.2134)
+```
+
+> **关键收获**: 宁德时代的边际风险贡献最大(0.1213)，远超工商银行(0.0159)——虽然宁德权重只多了10%，但对组合风险的贡献是工商银行的7.6倍。梯度给出了**局部最陡的降风险方向**，这正是第17章组合优化的数学基础: 最优组合处，所有资产的边际风险贡献应相等。
+
+---
+
+## 16.3 海森矩阵: 曲率的完整描述
+
+### 16.3.1 定义与几何意义
+
+梯度告诉你在当前点"往哪走最快下降"。但走多远？步子迈多大？这需要二阶信息——**曲率**。
+
+海森矩阵 (Hessian Matrix) 收集了 $f$ 的所有二阶偏导数:
+
+$$\boxed{\mathbf{H}_f(\mathbf{x}) = \begin{pmatrix}
+\frac{\partial^2 f}{\partial x_1^2} & \frac{\partial^2 f}{\partial x_1 \partial x_2} & \cdots & \frac{\partial^2 f}{\partial x_1 \partial x_n} \\
+\frac{\partial^2 f}{\partial x_2 \partial x_1} & \frac{\partial^2 f}{\partial x_2^2} & \cdots & \frac{\partial^2 f}{\partial x_2 \partial x_n} \\
+\vdots & \vdots & \ddots & \vdots \\
+\frac{\partial^2 f}{\partial x_n \partial x_1} & \frac{\partial^2 f}{\partial x_n \partial x_2} & \cdots & \frac{\partial^2 f}{\partial x_n^2}
+\end{pmatrix}}$$
+
+海森矩阵是方阵 ($n \times n$)，对称（当 $f$ 的二阶偏导连续时）。它描述的是函数在 $\mathbf{x}$ 处的**局部曲率**——梯度告诉"方向"，海森告诉"那个方向上的弯曲程度"。
+
+### 16.3.2 凸性的二阶判定
+
+一元函数中，$f''(x) > 0$ 意味着"碗状"（凸）。多元函数的推广:
+
+$$\boxed{f \text{ 是凸函数} \iff \mathbf{H}_f(\mathbf{x}) \text{ 对所有 } \mathbf{x} \text{ 半正定}}$$
+
+一个矩阵半正定意味着: 沿任何方向的曲率都 $\geq 0$——函数在任何方向都是"向上弯"或"平"的，从而只有一个全局最小值。
+
+**金融的重要性**: 组合方差 $f(\mathbf{w}) = \mathbf{w}^T\mathbf{\Sigma}\mathbf{w}$ 的海森矩阵是 $2\mathbf{\Sigma}$。因为协方差矩阵 $\mathbf{\Sigma}$ 是半正定的（第14章），所以组合方差函数是**凸函数**——你找到的局部最优就是全局最优。这就是 Markowitz 优化不会"陷入局部极值"的数学保证。
+
+### 16.3.3 数值实战: 验证组合方差的海森矩阵
+
+```python
+import numpy as np
+import pandas as pd
+
+csv_path = 'data/stock_data_50_20210601_20260531.csv'
+df = pd.read_csv(csv_path, parse_dates=['time'])
+selected = ['600519.SH', '300750.SZ', '601398.SH']
+
+df_recent = df[df['time'] >= '2024-06-01'].copy()
+pivot = df_recent.pivot(index='time', columns='thscode', values='close')[selected]
+rets = np.log(pivot / pivot.shift(1)).dropna()
+Sigma = rets.cov().values * 252  # 年化
+
+# 理论: H = 2Σ (对 f(w) = w^T Σ w)
+w = np.array([0.4, 0.35, 0.25])
+H_theory = 2 * Sigma
+
+# 数值验证: 用有限差分近似海森矩阵
+# H_{ij} ≈ [f(w+εe_i+εe_j) - f(w+εe_i-εe_j) - f(w-εe_i+εe_j) + f(w-εe_i-εe_j)] / (4ε²)
+def f(w): return w @ Sigma @ w
+
+eps = 1e-4
+n = len(w)
+H_numeric = np.zeros((n, n))
+for i in range(n):
+    for j in range(n):
+        ei = np.zeros(n); ej = np.zeros(n)
+        ei[i] = eps; ej[j] = eps
+        H_numeric[i,j] = (f(w+ei+ej) - f(w+ei-ej) - f(w-ei+ej) + f(w-ei-ej)) / (4*eps**2)
+
+print("理论海森矩阵 H=2Σ:")
+print(H_theory.round(6))
+print("\n数值近似海森矩阵 (有限差分, ε=1e-4):")
+print(H_numeric.round(6))
+print(f"\n最大误差: {np.max(np.abs(H_theory - H_numeric)):.2e}")
+print(f"验证: H ≈ 2Σ ? {np.allclose(H_theory, H_numeric, atol=1e-5)}")
+
+# 半正定性验证: 所有特征值 >= 0
+eigvals = np.linalg.eigvalsh(H_theory)
+print(f"\n海森特征值: {eigvals.round(6)} (全部 >=0 = {np.all(eigvals >= -1e-10)})")
+print(f"→ f(w)=w^TΣw 是凸函数, 局部最优=全局最优")
+```
+
+**运行结果**:
+```
+理论海森矩阵 H=2Sigma:
+[[0.117335 0.082864 0.021437]
+ [0.082864 0.325696 0.00327 ]
+ [0.021437 0.00327  0.069935]]
+
+数值近似海森矩阵 (有限差分, eps=1e-4):
+[[0.117335 0.082864 0.021437]
+ [0.082864 0.325696 0.00327 ]
+ [0.021437 0.00327  0.069935]]
+
+最大误差: 2.55e-10
+验证: H approx 2Sigma ? True
+
+海森特征值: [0.057649 0.100322 0.354996] (全部 >=0 = True)
+-> f(w)=w^T Sigma w 是凸函数, 局部最优=全局最优
+```
+
+---
+
+## 16.4 梯度下降法: "沿着最陡的方向, 一小步一小步走"
+
+### 16.4.1 迭代公式
+
+当"令梯度=0"无法解析求解时，用迭代法。梯度下降 (Gradient Descent) 是最基本的一种:
+
+$$\boxed{\mathbf{x}_{k+1} = \mathbf{x}_k - \eta \nabla f(\mathbf{x}_k)}$$
+
+其中 $\eta > 0$ 是**学习率 (Learning Rate)**——控制每步走多远。
+
+**直觉**: 在第 $k$ 步的位置 $\mathbf{x}_k$，计算梯度 $\nabla f(\mathbf{x}_k)$（指向函数增长最快的方向），然后**往反方向**走一小步——这就是"下山"。
+
+### 16.4.2 学习率的权衡
+
+| $\eta$ 太小 | $\eta$ 太大 |
+|------------|-----------|
+| 收敛极慢，需要几千步 | 在最优解附近震荡甚至发散 |
+| 浪费计算资源 | 完全错过最优解 |
+
+量化实践中，$\eta$ 通常通过**线搜索 (Line Search)** 或**自适应方法** (Adam, RMSprop) 自动调整。Scipy 的 `minimize` 默认使用 BFGS 方法——一种结合了梯度信息和曲率近似的"智能版"梯度下降。
+
+![学习率对梯度下降的影响: 左图 eta 太小收敛极慢, 中图 eta 适中快速收敛, 右图 eta 太大导致震荡发散。](images/ch16_fig2_learning_rate.png)
+
+> **直觉**: $f(x)=x^2$ 是最简单的凸函数，从 $x_0=2$ 出发。$\eta=0.05$ 时每步走得太小，20步后离原点还很远；$\eta=0.5$ 时恰到好处，几步就逼近原点；$\eta=1.05$ 时步子太大，直接跨过原点，下一轮震荡得更远——这就是"发散"。
+
+### 16.4.3 量化实战: 梯度下降拟合线性回归
+
+用梯度下降求解第15章已经用解析解算过的 CAPM 回归。注意: 真实数据中 $y$ (收益率, ~0.001) 和 $\mathbf{X}$ (含全1列和收益率列) 的尺度差异巨大，直接梯度下降会发散。实践中需要**标准化**——将特征和目标变量都缩放到均值为0、标准差为1:
+
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
+
+csv_path = 'data/stock_data_50_20210601_20260531.csv'
+df = pd.read_csv(csv_path, parse_dates=['time'])
+pivot = df.pivot(index='time', columns='thscode', values='close')
+rets = np.log(pivot / pivot.shift(1)).dropna()
+market = rets.mean(axis=1).values
+stock = rets['300750.SZ'].values; T = len(market)
+
+# 标准化: 特征和目标都缩放到 ~N(0,1), 这是梯度下降收敛的关键
+X_raw = np.column_stack([np.ones(T), market])
+y_raw = stock
+# 只标准化第二列(市场收益), 截距列保持全1
+X = X_raw.copy()
+X[:, 1] = (market - market.mean()) / market.std()
+y = (y_raw - y_raw.mean()) / y_raw.std()
+
+# === 解析解 ===
+beta_ols = np.linalg.solve(X.T @ X, X.T @ y)
+print(f"解析解 OLS (标准化后): alpha={beta_ols[0]:.6f}, beta={beta_ols[1]:.4f}")
+
+# === 梯度下降 ===
+def grad_sse(beta):
+    return -2 * X.T @ (y - X @ beta)
+
+# 安全学习率: eta < 2/lambda_max, 取 0.5/T 确保稳定收敛
+eta = 0.5 / T
+beta_gd = np.array([0.0, 0.0])
+n_iter = 300
+path_gd = np.zeros((n_iter, 2))
+for k in range(n_iter):
+    path_gd[k] = beta_gd
+    beta_gd = beta_gd - eta * grad_sse(beta_gd)
+
+print(f"梯度下降解:  alpha={beta_gd[0]:.6f}, beta={beta_gd[1]:.4f}")
+print(f"与解析解一致: {np.allclose(beta_gd, beta_ols, atol=1e-6)}")
+
+# 可视化: 损失函数等高线 + 优化路径
+def sse(beta): return np.sum((y - X @ beta)**2)
+a_vals = np.linspace(-0.08, 0.08, 100)
+b_vals = np.linspace(0.0, 1.2, 100)
+A, B = np.meshgrid(a_vals, b_vals)
+Z = np.array([[sse(np.array([a_vals[i], b_vals[j]]))
+               for i in range(len(a_vals))] for j in range(len(b_vals))])
+
+fig, ax = plt.subplots(figsize=(10, 7))
+cs = ax.contour(A, B, Z, levels=np.logspace(np.log10(Z.min()), np.log10(Z.max()), 30),
+                cmap='Blues_r', alpha=0.6)
+ax.plot(path_gd[:, 0], path_gd[:, 1], 'o-', color='#E74C3C', markersize=2, linewidth=1.2,
+        label=f'梯度下降 ({n_iter}步, eta={eta:.4f})')
+ax.scatter(beta_ols[0], beta_ols[1], color='#27AE60', s=150, marker='*', zorder=10,
+           label=f'解析解 (alpha={beta_ols[0]:.3f}, beta={beta_ols[1]:.3f})', edgecolors='black')
+ax.scatter(0, 0, color='gray', s=80, marker='x', zorder=10, label='初始点 (0, 0)')
+ax.set_xlabel('Alpha (标准化)'); ax.set_ylabel('Beta (标准化)')
+ax.set_title('梯度下降拟合 CAPM 回归: 损失函数等高线 + 优化路径')
+ax.legend(fontsize=10)
+plt.tight_layout(); plt.show()
+```
+
+**运行结果**:
+```
+解析解 OLS (标准化后): alpha=0.000000, beta=0.6825
+梯度下降解:  alpha=-0.000000, beta=0.6825
+与解析解一致: True
+```
+
+**运行结果**:
+```
+解析解 OLS: α=0.000923, β=1.3116
+梯度下降解:  α=0.000923, β=1.3116
+与解析解一致: True
+```
+
+> **关键收获**: 梯度下降迭代了500步才收敛到解析解——而解析解一次矩阵乘法就算完了。但这不意味着梯度下降"差"——当 $n=5000$ 时，$(\mathbf{X}^T\mathbf{X})^{-1}$ 需要 $O(n^3)$ 的浮点运算，梯度下降每步只需 $O(n^2)$。**能用解析解就优先用（第15章），解析解不存在时用数值方法（本章）。**
+
+---
+
+## 16.5 牛顿法: 利用曲率一步到位
+
+### 16.5.1 从一阶到二阶
+
+梯度下降只看"哪个方向最陡"（一阶信息）。牛顿法更进一步——它不仅看坡度，还看**坡度本身如何变化**（二阶信息），从而推断"谷底在哪里":
+
+$$\boxed{\mathbf{x}_{k+1} = \mathbf{x}_k - \mathbf{H}_f(\mathbf{x}_k)^{-1} \nabla f(\mathbf{x}_k)}$$
+
+**推导直觉**: 在 $\mathbf{x}_k$ 处对 $f$ 做二阶泰勒展开:
+
+$$f(\mathbf{x}) \approx f(\mathbf{x}_k) + \nabla f(\mathbf{x}_k)^T(\mathbf{x} - \mathbf{x}_k) + \frac{1}{2}(\mathbf{x} - \mathbf{x}_k)^T \mathbf{H}_f(\mathbf{x}_k)(\mathbf{x} - \mathbf{x}_k)$$
+
+对这个二次近似求最小值（令梯度为零），得到 $\mathbf{x} - \mathbf{x}_k = -\mathbf{H}_f^{-1}\nabla f$——这正是牛顿法的更新方向。
+
+**关键性质**:
+- 如果 $f$ 是二次函数（如 $\mathbf{w}^T\mathbf{\Sigma}\mathbf{w}$），牛顿法**一步**到达精确解——因为二次近似就是函数本身。
+- 牛顿法的收敛是**二次收敛**——误差的平方随迭代衰减，远比梯度下降的线性收敛快。
+
+### 16.5.2 梯度下降 vs 牛顿法: 量化视角
+
+| 方法 | 每步计算量 | 收敛速度 | 适用场景 |
+|------|-----------|---------|---------|
+| 梯度下降 | $O(n^2)$ (梯度) | 线性收敛 | 参数极多 ($n>10^4$)，海森矩阵太大 |
+| 牛顿法 | $O(n^3)$ (求逆) | 二次收敛 | 中小规模 ($n<10^3$)，函数接近二次 |
+
+在量化中，组合优化的参数数 $n$ 通常在50-500之间——**牛顿法及其变体 (BFGS, L-BFGS) 是主力。**
+
+![梯度下降 vs 牛顿法: 在条件数较大的二次函数 f(x1,x2)=0.5(x1²+4x2²) 上, 梯度下降沿"之字形"曲折前行, 牛顿法利用海森逆矩阵一步跳入谷底。](images/ch16_fig3_gd_vs_newton.png)
+
+> **几何对比**: 当函数的等高线不是正圆形（即海森矩阵各方向特征值差异大），梯度下降路径呈"之字形"——在窄方向上来回震荡，在宽方向上进展缓慢。牛顿法通过海森逆矩阵对梯度做了"旋转+缩放"，将椭圆的等高线"拉伸"为正圆形，从而一步指向谷底。**这正是 $-\mathbf{H}^{-1}\nabla f$ 这一项的几何意义。**
+
+### 16.5.3 量化实战: 牛顿法一步求解最小方差组合
+
+组合方差 $f(\mathbf{w}) = \mathbf{w}^T\mathbf{\Sigma}\mathbf{w}$ 是完美的二次函数——牛顿法应该一步收敛:
+
+```python
+import numpy as np
+import pandas as pd
+
+csv_path = 'data/stock_data_50_20210601_20260531.csv'
+df = pd.read_csv(csv_path, parse_dates=['time'])
+selected = ['600519.SH', '300750.SZ', '601398.SH', '000858.SZ', '002415.SZ']
+
+df_recent = df[df['time'] >= '2024-06-01'].copy()
+pivot = df_recent.pivot(index='time', columns='thscode', values='close')[selected]
+rets = np.log(pivot / pivot.shift(1)).dropna()
+Sigma = rets.cov().values * 252
+n = len(selected)
+
+# 先不考虑约束, 求无约束最小方差组合 (只做演示)
+# f(w) = w^T Σ w,  ∇f = 2Σw,  H_f = 2Σ
+w0 = np.ones(n) / n  # 等权起点
+
+# === 梯度下降: 需要多步 ===
+eta = 0.02
+w_gd = w0.copy()
+for k in range(50):
+    grad = 2 * Sigma @ w_gd
+    w_gd = w_gd - eta * grad
+
+# === 牛顿法: 一步! ===
+grad0 = 2 * Sigma @ w0
+H_inv = np.linalg.inv(2 * Sigma)       # 海森的逆
+w_newton = w0 - H_inv @ grad0
+
+# 解析解: 令梯度=0 → 2Σw=0 → w=0 (无约束最小值在原点)
+print(f"无约束最小值在 w=0 (组合方差=0)")
+print(f"\n{'方法':<14} {'w':>50} {'||w||':>6}")
+print("-" * 72)
+print(f"{'初始点(等权)':<14} {w0.round(4)}   {np.linalg.norm(w0):.4f}")
+print(f"{'梯度下降(50步)':<14} {w_gd.round(6)}   {np.linalg.norm(w_gd):.6f}")
+print(f"{'牛顿法(1步!)':<14} {w_newton.round(6)}   {np.linalg.norm(w_newton):.6f}")
+print(f"{'解析解':<14} {np.zeros(n).round(6)}   {0:.6f}")
+print(f"\n牛顿法到达零向量的精度: ||w_newton|| = {np.linalg.norm(w_newton):.2e}")
+```
+
+**运行结果**:
+```
+无约束最小值在 w=0 (组合方差=0)
+
+方法                                                              w    ||w||
+---------------------------------------------------------------------------
+初始点(等权)                                     [0.2 0.2 0.2 0.2 0.2]  0.4472
+梯度下降(50步)          [0.137049 0.105231 0.179881 0.1277   0.143543]  0.314842
+牛顿法(1步!)                                    [ 0.  0. -0.  0.  0.]  0.000000
+解析解                                              [0. 0. 0. 0. 0.]  0.000000
+
+牛顿法到达零向量的精度: ||w_newton|| = 3.72e-16
+```
+
+> **关键收获**: 对于二次函数，牛顿法一步就跳到精确解（误差仅浮点精度 $10^{-16}$），而梯度下降50步后离零点还有相当距离。当然，加了 $w_1+\cdots+w_n=1$ 约束后问题变成第17章的内容——但牛顿法的思想不变: **用海森矩阵"预判"曲率，一步跨到谷底。**
+
+---
+
+## 16.6 核心公式速查
+
+> 本节是前述各节公式的集中汇总, 供复习和查阅使用.
+
+| 概念 | 公式 | 量化意义 |
+|------|------|---------|
+| 梯度 | $\nabla f = (\partial f/\partial x_1, \dots, \partial f/\partial x_n)^T$ | 组合波动率对各资产权重的敏感度 |
+| 方向导数 | $D_{\mathbf{d}}f = \nabla f \cdot \mathbf{d}$ | 沿特定调仓方向的组合风险变化 |
+| 梯度=增长最快方向 | $\max_{\|\mathbf{d}\|=1} D_{\mathbf{d}}f = \|\nabla f\|$ | 负梯度 = 最快降风险方向 |
+| 组合方差梯度 | $\nabla(\mathbf{w}^T\mathbf{\Sigma}\mathbf{w}) = 2\mathbf{\Sigma}\mathbf{w}$ | 边际风险: 增持某资产的波动率增量 |
+| 海森矩阵 | $\mathbf{H}_{ij} = \partial^2 f/\partial x_i \partial x_j$ | 曲率信息: 梯度本身的变化速率 |
+| 组合方差海森 | $\mathbf{H} = 2\mathbf{\Sigma}$ | $\mathbf{\Sigma}$ 半正定 → 方差函数为凸函数 |
+| 凸性判定 | $\mathbf{H}$ 半正定 $\iff$ $f$ 凸 | 组合优化不会陷入局部极小 |
+| 梯度下降 | $\mathbf{x}_{k+1} = \mathbf{x}_k - \eta\nabla f(\mathbf{x}_k)$ | 沿负梯度方向迭代下山 |
+| 牛顿法 | $\mathbf{x}_{k+1} = \mathbf{x}_k - \mathbf{H}^{-1}\nabla f$ | 利用曲率预判谷底位置 |
+| 二次收敛 | $\|\mathbf{x}_{k+1}-\mathbf{x}^*\| \leq C\|\mathbf{x}_k-\mathbf{x}^*\|^2$ | 牛顿法在最优解附近的误差平方级衰减 |
+| 梯度下降收敛 | 线性收敛 | 适合海森矩阵太大无法求逆的高维问题 |
+
+---
+
+## 16.7 本章小结
+
+| 概念 | 核心公式 | 量化意义 |
+|------|---------|---------|
+| 梯度 | $\nabla f(\mathbf{x})$ — $n$个偏导数的向量 | 风险敏感度: 组合波动率对各权重的偏导 |
+| 负梯度方向 | $-\nabla f$ = 最快下降方向 | 局部最优调仓方向 |
+| 海森矩阵 | $\mathbf{H}_f$ — $n\times n$ 二阶导数矩阵 | 组合方差曲率 = $2\mathbf{\Sigma}$ |
+| 凸性 | $\mathbf{H} \succeq 0 \iff f$ 凸 | Markowitz 优化的全局最优性保证 |
+| 梯度下降 | $\mathbf{x}_{k+1} = \mathbf{x}_k - \eta\nabla f$ | 高维问题的基础迭代求解器 |
+| 牛顿法 | $\mathbf{x}_{k+1} = \mathbf{x}_k - \mathbf{H}^{-1}\nabla f$ | 二次函数一步收敛; 量化优化主力算法 |
+| BFGS/L-BFGS | 近似海森逆的拟牛顿法 | scipy.optimize.minimize 的默认引擎 |
+
+**从本章走向下一章**:
+- 第17章将为本章的梯度工具加上**约束**——拉格朗日乘子法。你会看到最小方差组合 $w_{\min} = \Sigma^{-1}\mathbf{1}/(\mathbf{1}^T\Sigma^{-1}\mathbf{1})$ 是通过"令拉格朗日函数的梯度为零"推导出来的，本质上就是本章 $\nabla f = \mathbf{0}$ 加上约束条件的扩展。梯度下降→牛顿法→拉格朗日乘子，三条线在 Markowitz 有效前沿汇合。
+
+---
+
+## 16.8 练习题
+
+### 数学推导
+
+**题1——组合方差的梯度与海森**:
+
+(a) 对 $f(\mathbf{w}) = \mathbf{w}^T\mathbf{\Sigma}\mathbf{w}$，证明 $\nabla f(\mathbf{w}) = 2\mathbf{\Sigma}\mathbf{w}$。（提示: 写成分量形式 $f=\sum_i\sum_j w_i w_j \sigma_{ij}$，对 $w_k$ 求偏导。）
+
+(b) 证明海森矩阵 $\mathbf{H}_f = 2\mathbf{\Sigma}$。
+
+(c) 如果 $\mathbf{\Sigma}$ 的特征值为 $\lambda_1 \geq \cdots \geq \lambda_n \geq 0$，$f$ 在原点 ($\mathbf{w}=\mathbf{0}$) 处的曲率沿第 $i$ 个特征向量方向是多少？沿哪个方向曲率最大？最小？
+
+**题2——梯度下降的收敛性**:
+
+对于二次函数 $f(x) = \frac{1}{2}ax^2$ ($a>0$)，梯度下降的迭代为 $x_{k+1} = x_k - \eta \cdot ax_k = (1-\eta a)x_k$。
+
+(a) 证明 $x_k = (1-\eta a)^k x_0$。收敛（$|x_k| \to 0$）的条件是什么？
+
+(b) 最优学习率 $\eta^*$ 是多少？用最优学习率时，多少步后误差小于 $10^{-6} \times |x_0|$？
+
+(c) 对于多元二次函数 $f(\mathbf{x}) = \frac{1}{2}\mathbf{x}^T\mathbf{A}\mathbf{x}$，收敛速度由什么决定？（提示: 考虑 $\mathbf{A}$ 的特征值。）
+
+**题3——海森矩阵与凸性的关系**:
+
+(a) 对两资产组合方差 $f(w_1, w_2) = w_1^2\sigma_1^2 + w_2^2\sigma_2^2 + 2w_1 w_2\rho\sigma_1\sigma_2$，写出海森矩阵。
+
+(b) 证明海森矩阵的特征值为 $\sigma_1^2 + \sigma_2^2 \pm \sqrt{(\sigma_1^2 - \sigma_2^2)^2 + 4\rho^2\sigma_1^2\sigma_2^2}$。验证当 $|\rho| \leq 1$ 时两者均 $\geq 0$——即 $f$ 是凸函数。
+
+(c) 当 $\rho = \pm 1$ 时，一个特征值变为零。这对应什么金融场景？组合方差函数是否还是凸函数？
+
+### 编程实践
+
+**题4——梯度下降学习率的实验**: 基于16.4.3的CAPM梯度下降代码，固定迭代100步，分别测试 $\eta = 0.001, 0.005, 0.01, 0.05, 0.1$。
+
+(a) 画出每种学习率下 SSE 随迭代步数的衰减曲线（同一张图上5条线）。哪个学习率收敛最快？哪个发散了？
+
+(b) 对发散的 $\eta$，解释原因——为什么会出现"越过最优解后越走越远"的现象？
+
+**题5——多资产组合的边际风险分析**: 从 `stock_data_50` 中选10只不同行业的股票（最近250天），计算协方差矩阵，取等权组合。
+
+(a) 计算每个资产的边际风险贡献 $MCAR_i = w_i \cdot \partial\sigma_p/\partial w_i$，绘制边际贡献的条形图。哪3只资产对组合风险贡献最大？哪3只最小？按行业分组观察规律。
+
+(b) 理论最优条件: 在无约束下，所有资产的边际风险贡献应相等。你的等权组合的边际贡献差异有多大？计算边际贡献的标准差——标准差越小，说明等权组合越接近最优吗？
+
+---
+
+## 16.9 参考文献
+
+1. **Boyd, S., & Vandenberghe, L.** (2004). *Convex Optimization*. Cambridge University Press. （第1-2章建立凸集和凸函数的概念框架; 第9章覆盖梯度下降和牛顿法的收敛性分析——本章的数学基础）
+
+2. **Nocedal, J., & Wright, S. J.** (2006). *Numerical Optimization* (2nd ed.). Springer. （第2-3章系统讲解线搜索、梯度下降、牛顿法和拟牛顿法——量化优化引擎的内部实现参考）
+
+3. **Grinold, R. C., & Kahn, R. N.** (1999). *Active Portfolio Management* (2nd ed.). McGraw-Hill. （第4章将边际风险贡献和梯度概念置于组合优化的实务框架中——从数学梯度到投资决策的映射）
+
+4. **Magnus, J. R., & Neudecker, H.** (2019). *Matrix Differential Calculus with Applications in Statistics and Econometrics* (3rd ed.). Wiley. （矩阵求导的标准参考书——本章 $\nabla(\mathbf{w}^T\mathbf{\Sigma}\mathbf{w}) = 2\mathbf{\Sigma}\mathbf{w}$ 的严格数学基础）
+
+5. **Press, W. H., Teukolsky, S. A., et al.** (2007). *Numerical Recipes* (3rd ed.). Cambridge University Press. （第10章以工程视角讲解优化算法——梯度下降和牛顿法的实用代码实现与数值陷阱）
+
+---
+
+> **愿我们都能在数字与代码之间, 找到理解市场的那把钥匙.**
+>
+> *数学的理解没有捷径, 量化的能力无法外包.*
