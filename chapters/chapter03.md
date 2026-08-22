@@ -103,7 +103,7 @@ $$\frac{\Delta P}{P} \approx -D_{mod} \cdot \Delta y + \frac{1}{2} C \cdot (\Del
 | **Delta ($\Delta$)** | $\frac{\partial V}{\partial S}$ | 股价变动1元，期权价值变动多少 |
 | **Gamma ($\Gamma$)** | $\frac{\partial^2 V}{\partial S^2}$ | Delta 对股价的敏感度（二阶效应）|
 | **Vega** | $\frac{\partial V}{\partial \sigma}$ | 波动率变动1%，期权价值变动多少 |
-| **Theta ($\Theta$)** | $\frac{\partial V}{\partial T}$ | 时间流逝1天，期权价值变动多少 |
+| **Theta ($\Theta$)** | $\frac{\partial V}{\partial t}$ | 时间流逝1天（到期日 $T$ 临近），期权价值变动多少（多头通常为负，即"时间损耗"）|
 | **Rho ($\rho$)** | $\frac{\partial V}{\partial r}$ | 利率变动1%，期权价值变动多少 |
 
 > 💡 **核心洞察**：在量化金融中，**导数 = 敏感度 = 风险度量**。一个交易员的风险报告，本质上就是一张"各维度导数"的表格。
@@ -146,7 +146,7 @@ $$\frac{d}{dx}[c \cdot f(x)] = c \cdot f'(x)$$
 
 ## 3.4 核心公式速查
 
-> 本节是前述各节公式的集中汇总，供复习和查阅使用。
+> 本节是前述各节公式的集中汇总, 供复习和查阅使用.
 
 ### 公式 3.1：导数的极限定义
 
@@ -389,6 +389,7 @@ plt.show()
 
 ```python
 import jax
+jax.config.update("jax_enable_x64", True)  # 启用 float64, 默认的 float32 精度不够金融计算使用
 import jax.numpy as jnp
 from jax import grad
 
@@ -400,7 +401,7 @@ def bond_price_jax(y):
     coupon = face_value * coupon_rate
 
     # JAX 的向量化和循环
-    t = jnp.arange(1, maturity + 1, dtype=jnp.float32)
+    t = jnp.arange(1, maturity + 1, dtype=jnp.float64)
     price = jnp.sum(coupon / ((1 + y) ** t))
     price += face_value / ((1 + y) ** maturity)
     return price
@@ -458,15 +459,15 @@ print(f"差异 = {abs(dP_dy_numerical - dP_dy_jax):.2e}")
 ==================================================
 债券价格 P(y₀) = 100.000000
 一阶导数 P'(y₀) = -432.947667  （自动微分，精确值）
-二阶导数 P''(y₀) = 1973.577271  （自动微分，精确值）
+二阶导数 P''(y₀) = 2393.598750  （自动微分，精确值）
 修正久期 D_mod = 4.329477
-凸性 C = 19.735773
+凸性 C = 23.935987
 ==================================================
 
 === 数值微分 vs 自动微分对比 ===
-数值微分 P'(y₀) = -432.9476673584
-自动微分 P'(y₀) = -432.9476623535
-差异 = 5.00e-06
+数值微分 P'(y₀) = -432.9476673270
+自动微分 P'(y₀) = -432.9476670631
+差异 = 2.64e-07
 ```
 
 **自动微分的优势**：
@@ -485,7 +486,11 @@ print(f"差异 = {abs(dP_dy_numerical - dP_dy_jax):.2e}")
 
 ```python
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.stats import norm
+
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
 
 # ========== Black-Scholes 参数 ==========
 S = 100       # 当前股价
@@ -562,7 +567,7 @@ Black-Scholes 欧式看涨期权 Greeks
 ==================================================
 当前股价 S = 100
 行权价 K = 100
-到期时间 T = 1 年
+到期时间 T = 1.0 年
 无风险利率 r = 5.0%
 波动率 σ = 20.0%
 d1 = 0.3500, d2 = 0.1500
@@ -579,7 +584,7 @@ Delta = 0.6368
 - **左图（期权价格曲线）**：看涨期权价格是股价的**凸函数**——股价越高，期权价值增长越快（斜率越来越大）。这正是因为 Delta 本身也是股价的增函数。
 - **右图（Delta 曲线）**：
   - 深度虚值（$S \ll K$）：Delta 接近 0，股价变动对期权价值几乎没有影响
-  - 平值附近（$S \approx K$）：Delta 约 0.5，期权像"半只股票"
+  - 平值附近（$S \approx K$）：Delta 在 0.5 附近（本例为 0.6368, 因 $r>0$ 且期限较长，平值看涨期权的 Delta 会略高于 0.5），期权像"半只股票"
   - 深度实值（$S \gg K$）：Delta 接近 1，期权行为几乎等同于持有股票本身
 
 ---

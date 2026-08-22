@@ -123,7 +123,7 @@ $$f(x, y) \approx f(x_0, y_0) + f_x \Delta x + f_y \Delta y + \frac{1}{2}f_{xx}(
 
 ## 6.3 核心公式速查
 
-> 本节是前述各节公式的集中汇总，供复习和查阅使用。
+> 本节是前述各节公式的集中汇总, 供复习和查阅使用.
 
 | 公式 | 名称 | 适用条件 |
 |------|------|----------|
@@ -256,7 +256,7 @@ orders = [1, 2, 3, 5, 10, 20]
 colors = plt.cm.viridis(np.linspace(0, 1, len(orders)))
 
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(x, y_true, 'k-', linewidth=2.5, label='$\ln(1+x)$（精确值）', zorder=10)
+ax.plot(x, y_true, 'k-', linewidth=2.5, label=r'$\ln(1+x)$（精确值）', zorder=10)
 
 for n, color in zip(orders, colors):
     y_approx = [taylor_ln(xi, n) for xi in x]
@@ -269,7 +269,7 @@ ax.set_xlim(-0.95, 0.95)
 ax.set_ylim(-2, 1)
 ax.set_xlabel('x', fontsize=12)
 ax.set_ylabel('函数值', fontsize=12)
-ax.set_title('$\ln(1+x)$ 的泰勒展开：收敛半径为 1', fontsize=13)
+ax.set_title(r'$\ln(1+x)$ 的泰勒展开：收敛半径为 1', fontsize=13)
 ax.legend(fontsize=9, loc='lower right')
 ax.grid(True, alpha=0.3)
 
@@ -414,9 +414,12 @@ print("\n关键数值对比表：")
 print(f"{'收益率变化':>12} | {'精确价格':>10} | {'一阶近似':>10} | {'二阶近似':>10} | {'一阶误差':>10} | {'二阶误差':>10}")
 print("-" * 90)
 for dy in [-0.03, -0.02, -0.01, 0.00, 0.01, 0.02, 0.03]:
-    idx = np.argmin(np.abs(yield_changes - dy))
-    print(f"{dy*100:11.2f}% | {prices_exact[idx]:10.4f} | {prices_linear[idx]:10.4f} | "
-          f"{prices_quadratic[idx]:10.4f} | {error_linear[idx]:10.4f} | {error_quadratic[idx]:10.4f}")
+    # 在标注的收益率变化点直接计算，保证表中数字可复现
+    p_exact = bond_price(face_value, coupon_rate, ytm_current + dy, years)
+    p_lin = price_0 - duration * price_0 * dy
+    p_quad = price_0 - duration * price_0 * dy + 0.5 * convexity * price_0 * dy**2
+    print(f"{dy*100:11.2f}% | {p_exact:10.4f} | {p_lin:10.4f} | "
+          f"{p_quad:10.4f} | {p_lin - p_exact:10.4f} | {p_quad - p_exact:10.4f}")
 ```
 
 **运行结果**：
@@ -439,7 +442,7 @@ for dy in [-0.03, -0.02, -0.01, 0.00, 0.01, 0.02, 0.03]:
 
 ![债券定价中的泰勒展开: 久期(一阶切线) vs 久期+凸性(二阶抛物线) vs 精确价格](images/ch06_fig3_bond_taylor.png)
 
-**金融直觉**：左图显示，债券价格-收益率曲线是一条**凸函数**（向下弯曲）。一阶近似（红色虚线）是一条直线，只能捕捉曲线在 $y_0$ 处的切线方向；二阶近似（蓝色点划线）加入了凸性修正，能更好地贴合曲线的弯曲。右图的误差分析更直观：在收益率变化 $\pm 1\%$ 时，一阶近似误差约 $0.12$ 元，二阶近似将误差压到约 $0.003$ 元——**精度提升了约 47 倍**。
+**金融直觉**：左图显示，债券价格-收益率曲线是一条**凸函数**（向上弯曲，即正凸性）。一阶近似（红色虚线）是一条直线，只能捕捉曲线在 $y_0$ 处的切线方向；二阶近似（蓝色点划线）加入了凸性修正，能更好地贴合曲线的弯曲。右图的误差分析更直观：在收益率变化 $\pm 1\%$ 时，一阶近似误差约 $0.12$ 元，二阶近似将误差压到约 $0.003$ 元——**精度提升了约 47 倍**。
 
 ---
 
@@ -645,9 +648,12 @@ plt.show()
 print("误差与 (dS)^n 的比例关系验证：")
 print("-" * 60)
 for dS in [1, 2, 5, 10]:
-    idx = np.argmin(np.abs(dS_values - dS))
-    e1 = errors_1st[idx]
-    e2 = errors_2nd[idx]
+    # 在标注的 dS 点直接计算，保证表中数字可复现
+    p_exact = bs_call_and_greeks(S0 + dS, K, T, r, sigma)[0]
+    p_1st = price_0 + delta * dS
+    p_2nd = price_0 + delta * dS + 0.5 * gamma * dS**2
+    e1 = abs(p_1st - p_exact)
+    e2 = abs(p_2nd - p_exact)
     print(f"dS = {dS:2d}: 一阶误差 = {e1:.6f}, 二阶误差 = {e2:.6f}")
     print(f"       一阶误差 / (dS)^2 = {e1/dS**2:.6f}, 二阶误差 / (dS)^3 = {e2/dS**3:.6f}")
     print()
@@ -681,6 +687,3 @@ for dS in [1, 2, 5, 10]:
 3. Stewart, J. (2015). *Calculus: Early Transcendentals* (8th ed.). Cengage Learning.（第11章：泰勒级数与麦克劳林级数）
 4. 李贤平. (2010). 《概率论基础》. 高等教育出版社.（级数收敛性与对数正态分布的展开基础）
 
----
-
-> **下一章预告**：第7章《概率论基础——从掷骰子到资产收益》。我们将离开确定性函数的微积分世界，进入量化金融最核心的语言：概率。你会理解为什么"收益率是一个随机变量"这句话，彻底改变了我们看待市场的方式。

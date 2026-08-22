@@ -180,7 +180,7 @@ $$P(L > \text{VaR}) = 0.05 \quad \Longleftrightarrow \quad \int_{\text{VaR}}^{\i
 
 ## 4.5 核心公式速查
 
-> 本节是前述各节公式的集中汇总，供复习和查阅使用。
+> 本节是前述各节公式的集中汇总, 供复习和查阅使用.
 
 ### 公式 4.1：定积分的黎曼和定义
 
@@ -305,27 +305,27 @@ print(f"SciPy quad: {result:.15f} (est error: {error_est:.2e})")
 ```
 精确值: 0.3333333333
 
-       n | Method             |     Approx |        Error
+       n | Method             |       Approx |        Error
 ------------------------------------------------------------
       10 | Riemann Left       | 0.2850000000 |     4.83e-02
       10 | Riemann Mid        | 0.3325000000 |     8.33e-04
       10 | Trapezoidal        | 0.3350000000 |     1.67e-03
-      10 | Simpson            | 0.3333333333 |     1.11e-16
+      10 | Simpson            | 0.3333333333 |     0.00e+00
 
      100 | Riemann Left       | 0.3283500000 |     4.98e-03
      100 | Riemann Mid        | 0.3333250000 |     8.33e-06
      100 | Trapezoidal        | 0.3333500000 |     1.67e-05
-     100 | Simpson            | 0.3333333333 |     1.11e-16
+     100 | Simpson            | 0.3333333333 |     5.55e-17
 
-    1000 | Riemann Left       | 0.3328335000 |     4.99e-04
-    1000 | Riemann Mid        | 0.3333325000 |     8.33e-07
-    1000 | Trapezoidal        | 0.3333335000 |     1.67e-06
-    1000 | Simpson            | 0.3333333333 |     1.11e-16
+    1000 | Riemann Left       | 0.3328335000 |     5.00e-04
+    1000 | Riemann Mid        | 0.3333332500 |     8.33e-08
+    1000 | Trapezoidal        | 0.3333335000 |     1.67e-07
+    1000 | Simpson            | 0.3333333333 |     0.00e+00
 
    10000 | Riemann Left       | 0.3332833350 |     5.00e-05
-   10000 | Riemann Mid        | 0.3333333250 |     8.33e-08
-   10000 | Trapezoidal        | 0.3333333350 |     1.67e-07
-   10000 | Simpson            | 0.3333333333 |     1.11e-16
+   10000 | Riemann Mid        | 0.3333333325 |     8.33e-10
+   10000 | Trapezoidal        | 0.3333333350 |     1.67e-09
+   10000 | Simpson            | 0.3333333333 |     5.55e-17
 
 SciPy quad: 0.333333333333333 (est error: 3.70e-15)
 ```
@@ -547,7 +547,7 @@ plt.show()
 
 ```
 Lognormal parameters:
-  mu = 4.6052
+  mu = 4.6352
   sigma*sqrt(T) = 0.2000
 
 Numerical integration:
@@ -645,6 +645,9 @@ ax.plot(x_range * 100, pdf_values, color='#2196F3', linewidth=2, label='Return d
 alpha = 0.95
 z_alpha = norm.ppf(1 - alpha)
 var_threshold = mu_T + z_alpha * sigma_T
+# 重算 95% 档的 CVaR（循环结束后 cvar_amount 停留在最后一个置信水平上）
+numerator, _ = integrate.quad(integrand_cvar, -np.inf, var_threshold)
+cvar_amount = portfolio_value * numerator / (1 - alpha)
 ax.axvline(x=var_threshold * 100, color='#E91E63', linestyle='--', linewidth=2, 
            label=f'95% VaR = {var_threshold*100:.4f}%')
 
@@ -678,7 +681,7 @@ Portfolio parameters:
   Daily return ~ N(0.0397%, 0.9449%)
 
 === Value at Risk (VaR) ===
-  Confidence |        VaR($) |     VaR(%)
+Confidence |          VaR($) |     VaR(%)
 ---------------------------------------------
      90.0% |       11,712.70 |    1.1713%
      95.0% |       15,145.58 |    1.5146%
@@ -686,7 +689,7 @@ Portfolio parameters:
     99.9% |       28,803.13 |    2.8803%
 
 === Conditional VaR (CVaR/Expected Shortfall) ===
-  Confidence |       CVaR($) |    CVaR(%)
+Confidence |         CVaR($) |    CVaR(%)
 ---------------------------------------------
      90.0% |       16,186.21 |    1.6186%
      95.0% |       19,093.98 |    1.9094%
