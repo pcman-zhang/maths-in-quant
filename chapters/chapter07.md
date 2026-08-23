@@ -1072,8 +1072,13 @@ plt.show()
 # ============================================
 # 加载真实市场数据
 # ============================================
-# 读取 CSV 文件(自动适配 notebook 目录和项目根目录)
-import os
+import numpy as np
+import pandas as pd
+from scipy import stats
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
+
 csv_path = 'data/ifind_price_data.csv'
 df_raw = pd.read_csv(csv_path, parse_dates=['time'])
 
@@ -1213,6 +1218,11 @@ print(f"  模拟盈利概率: {(final_fair > 0).mean():.2%}")
 # ============================================
 # 全概率公式: 宏观情景下的上涨概率
 # ============================================
+import numpy as np
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
+
 states = ['经济扩张', '经济平稳', '经济衰退']
 prob_states = np.array([0.40, 0.35, 0.25])
 prob_up_given_state = np.array([0.80, 0.55, 0.30])
@@ -1265,6 +1275,11 @@ plt.show()
 # ============================================
 # 贝叶斯更新: 判断策略是否失效
 # ============================================
+import numpy as np
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
+
 def bayesian_strategy_update(prior_valid, p_win_valid, p_win_invalid, n_losses):
     """
     贝叶斯更新: 观察到连续 n 次亏损后, 策略仍有效的后验概率
@@ -1381,16 +1396,16 @@ for n in [0, 1, 2, 3, 5, 7, 10, 15]:
 =================================================================
 贝叶斯更新数值表(策略失效判断)
 =================================================================
-连续亏损      似然(有效)        似然(失效)        后验概率
+连续亏损       似然(有效)          似然(失效)          后验概率        
 -----------------------------------------------------------------
-0          1.000000        1.000000        85.00%
-1          0.300000        0.550000        75.56%
-2          0.090000        0.302500        62.74%
-3          0.027000        0.166375        47.97%
-5          0.002430        0.050328        21.49%
-7          0.000219        0.015224        8.16%
-10         0.000006        0.002533        1.64%
-15         0.000000        0.000127        0.06%
+0          1.000000        1.000000        85.00%      
+1          0.300000        0.550000        75.56%      
+2          0.090000        0.302500        62.77%      
+3          0.027000        0.166375        47.91%      
+5          0.002430        0.050328        21.48%      
+7          0.000219        0.015224        7.53%       
+10         0.000006        0.002533        1.30%       
+15         0.000000        0.000127        0.06%       
 ```
 
 **代码解读**:
@@ -1408,6 +1423,11 @@ for n in [0, 1, 2, 3, 5, 7, 10, 15]:
 # ============================================
 # 序贯贝叶斯更新: 逐日实时追踪
 # ============================================
+import numpy as np
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei']
+plt.rcParams['axes.unicode_minus'] = False
+
 def sequential_bayesian_update(observations, prior, p_win_valid, p_win_invalid):
     """
     序贯贝叶斯更新: 逐个观察交易结果并更新信念

@@ -348,7 +348,7 @@ jupyter notebook chapters/
 | 标的 | 沪深 300（000300.SH）、贵州茅台（600519.SH）、宁德时代（300750.SZ） |
 | 数据区间 | 2023-05-25 ~ 2026-05-22 |
 | 总行数 | ~2172 行（3 标的 × 724 交易日, 对齐后 723 天） |
-| 字段 | `thscode, time, open, high, low, close, volume, thsname_cn, currency` |
+| 字段 | `thscode, time, open, high, low, close, volume, thsname_cn, currency`(后复权) |
 
 ### 数据集二: `stock_data_50_20210601_20260531.csv` — 多资产分析用（第 11 章起）
 
@@ -363,7 +363,7 @@ jupyter notebook chapters/
 | 行业覆盖 | 15 个申万一级行业（电力设备 9、电子 5、食品饮料 5、医药生物 5、计算机 4、有色金属 3、非银金融 3、机械设备 3、银行 3、房地产 2、汽车 2、交通运输 2、农林牧渔 2、基础化工 1、建筑材料 1） |
 | 市值跨度 | 118 亿（300618 寒锐钴业）~ 2.57 万亿（601398 工商银行） |
 | 年化波动率跨度 | 16.0%（银行）~ 57.7%（科创板电力设备） |
-| 字段 | `thscode, time, open, high, low, close, volume, market_cap, industry` |
+| 字段 | `thscode, time, open, high, low, close, volume, market_cap, industry`(前复权) |
 
 **板块波动率特征**（对假设检验教学最有价值的维度）:
 
@@ -374,6 +374,7 @@ jupyter notebook chapters/
 | 科创板（688 开头） | 6 只 | 43.0% ~ 57.7% | 极高波动组, CLT 收敛慢 |
 
 > **代码注意**: 数据已清洗, 无 NaN, 无 BOM, `pd.read_csv` 直接可用.
+> **复权口径** (2026-08 审计): 个股价格均为**后复权**(含分红再投资), 除息日无跳空; 指数为价格指数. 来源: tushare (`pro_bar adj='hfq'`).
 
 ### 数据集三: `index_data_7_20210601_20260531.csv` — 市场基准（全章节可用）
 
